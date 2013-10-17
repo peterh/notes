@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 var port = flag.String("port", ":9696", "Port to listen on (don't forget :)")
@@ -27,6 +28,10 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	const header1 = "<html><head><title>"
 	const header2 = "</title></head>\n<body>\n"
 	const footer = "</body></html>"
+	if strings.Contains(r.URL.Path, "/.") {
+		http.Error(w, "404 not found", http.StatusNotFound)
+		return
+	}
 	subdir := path.Clean(r.URL.Path)
 	f, err := os.Open(filepath.Join(*rootDir, subdir))
 	if err != nil {
@@ -53,6 +58,9 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		io.WriteString(w, "<ul>\n")
 		for _, v := range list {
+			if strings.HasPrefix(v.Name(), ".") {
+				continue
+			}
 			fmt.Fprintf(w, `<li><a href="%s">%s</a></li>`,
 				path.Join(subdir, v.Name()), v.Name())
 			fmt.Fprintln(w)
