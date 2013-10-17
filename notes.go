@@ -61,9 +61,12 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(v.Name(), ".") {
 				continue
 			}
-			fmt.Fprintf(w, `<li><a href="%s">%s</a></li>`,
+			fmt.Fprintf(w, `<li><a href="%s">%s</a>`,
 				path.Join(subdir, v.Name()), v.Name())
-			fmt.Fprintln(w)
+			if v.IsDir() {
+				io.WriteString(w, "/")
+			}
+			fmt.Fprintln(w, "</li>")
 		}
 		io.WriteString(w, "</ul>\n")
 		io.WriteString(w, footer)
