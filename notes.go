@@ -7,6 +7,7 @@ import (
 	"github.com/knieriem/markdown"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -14,7 +15,7 @@ import (
 	"strings"
 )
 
-var port = flag.String("port", ":9696", "Port to listen on (don't forget :)")
+var port = flag.String("port", ":0", "Port to listen on (don't forget :)")
 var rootDir = flag.String("root", findNotes(), "Root directory full of .md files")
 
 type rootHandler struct{}
@@ -93,8 +94,15 @@ func main() {
 		log.Fatal("Cannot locate root")
 	}
 
-	var root rootHandler
-	s := &http.Server{Addr: *port, Handler: &root}
-	launch("http://localhost" + *port + "/")
-	log.Fatal(s.ListenAndServe())
+	l, err := net.Listen("tcp", *port)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if addr, ok := l.Addr().(*net.TCPAddr); ok {
+		launch(fmt.Sprintf("http://localhost:%d/", addr.Port))
+		log.Fatal(http.Serve(l, &rootHandler{}))
+	} else {
+		log.Fatal(`Listen("tcp") does not return a *TCPAddr`)
+	}
 }
